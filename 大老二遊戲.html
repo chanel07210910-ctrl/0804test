@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大老二皇者對戰 | Big Two Showdown</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tableFelt: '#0F5132',
+                        tableDark: '#0A3622',
+                        goldAccent: '#E5C158',
+                        goldHover: '#F7D774',
+                        cardBg: '#FFFFFF',
+                        pokerRed: '#DC2626',
+                        pokerBlack: '#1E293B',
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                        cinzel: ['Cinzel', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background: radial-gradient(circle at center, #145A32 0%, #082818 100%);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Felt table pattern */
+        .felt-table {
+            background-color: #0f5132;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0);
+            background-size: 16px 16px;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Card Styles */
+        .poker-card {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border-radius: 0.5rem;
+            position: relative;
+            background-color: #fff;
+            transform-origin: bottom center;
+        }
+
+        .poker-card:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+
+        .poker-card.selected {
+            transform: translateY(-22px) !important;
+            box-shadow: 0 12px 24px rgba(229, 193, 88, 0.5), 0 0 0 2px #E5C158;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #b91c1c 25%, #7f1d1d 25%, #7f1d1d 50%, #b91c1c 50%, #b91c1c 75%, #7f1d1d 75%, #7f1d1d 100%);
+            background-size: 12px 12px;
+            border: 2px solid #ffffff;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E5C158;
+            border-radius: 3px;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(229, 193, 88, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(229, 193, 88, 0.9); }
+        }
+
+        .active-turn {
+            animation: pulseGlow 1.5s infinite;
+            border-color: #E5C158 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col justify-between p-2 sm:p-4">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full max-w-6xl mx-auto flex justify-between items-center bg-black/40 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-goldAccent/30 shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-600 to-goldAccent flex items-center justify-center text-slate-900 font-bold shadow">
+                <i class="fa-solid fa-crown text-base"></i>
+            </div>
+            <div>
+                <h1 class="text-base sm:text-lg font-black tracking-wider text-goldAccent font-cinzel">BIG TWO SHOWDOWN</h1>
+                <p class="text-[10px] text-emerald-300 font-medium">大老二線上對戰 • 經典正宗台制規則</p>
+            </div>
+        </div>
+
+        <!-- Controls & Stats -->
+        <div class="flex items-center gap-2 sm:gap-4 text-xs">
+            <div class="bg-black/50 px-3 py-1.5 rounded-xl border border-white/10 hidden sm:flex items-center gap-2">
+                <span class="text-slate-400">獲勝戰績:</span>
+                <span id="winCount" class="text-goldAccent font-bold">0 勝</span>
+            </div>
+
+            <button onclick="toggleAudio()" id="audioBtn" class="w-8 h-8 rounded-lg bg-emerald-900/80 border border-emerald-600/50 hover:bg-emerald-800 text-goldAccent flex items-center justify-center transition">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+
+            <button onclick="showRuleModal()" class="px-3 py-1.5 rounded-lg bg-emerald-900/80 border border-emerald-600/50 hover:bg-emerald-800 text-goldAccent font-semibold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-question"></i>
+                <span class="hidden sm:inline">規則</span>
+            </button>
+
+            <button onclick="startNewGame()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-goldAccent hover:from-amber-400 hover:to-goldHover text-slate-950 font-bold shadow-md transition transform active:scale-95 flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>新局</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Poker Table Container -->
+    <main class="w-full max-w-6xl mx-auto my-2 flex-1 relative felt-table rounded-3xl border-4 border-amber-900/60 p-3 sm:p-6 flex flex-col justify-between min-h-[580px] shadow-2xl">
+
+        <!-- NORTH PLAYER (AI 2) -->
+        <div class="flex flex-col items-center gap-1 z-10">
+            <div id="avatar-north" class="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700 transition-all">
+                <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow">北</div>
+                <span class="text-xs font-semibold text-slate-200">玄武 (AI)</span>
+                <span id="cards-north" class="bg-amber-500/20 text-goldAccent px-2 py-0.5 rounded-full text-[11px] font-bold border border-goldAccent/30">13 張</span>
+            </div>
+            <!-- Card backs representation -->
+            <div id="hand-north" class="flex -space-x-8 sm:-space-x-10 h-12 sm:h-16 items-center overflow-hidden px-2"></div>
+        </div>
+
+        <!-- MIDDLE ROW: WEST PLAYER, CENTER TABLE (TRICK DISPLAY), EAST PLAYER -->
+        <div class="grid grid-cols-12 gap-2 my-auto items-center">
+            
+            <!-- WEST PLAYER (AI 1) -->
+            <div class="col-span-3 sm:col-span-2 flex flex-col items-start gap-1 z-10">
+                <div id="avatar-west" class="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1.5 rounded-full border border-slate-700 transition-all">
+                    <div class="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xs shadow">西</div>
+                    <div class="hidden sm:block text-left">
+                        <p class="text-xs font-semibold text-slate-200">白虎</p>
+                        <p id="cards-west" class="text-[10px] text-goldAccent font-bold">13 張</p>
+                    </div>
+                </div>
+                <span id="cards-west-mobile" class="sm:hidden text-[10px] bg-slate-900/80 text-goldAccent px-2 py-0.5 rounded-full border border-slate-700">13張</span>
+                <div id="hand-west" class="flex flex-col -space-y-12 sm:-space-y-10 w-12 sm:w-16 items-center"></div>
+            </div>
+
+            <!-- CENTER TABLE TRICK AREA -->
+            <div class="col-span-6 sm:col-span-8 flex flex-col items-center justify-center min-h-[160px] bg-black/20 rounded-2xl border border-white/5 p-4 text-center relative">
+                
+                <!-- Status Message / Turn Prompt -->
+                <div id="table-status" class="text-xs sm:text-sm font-semibold text-amber-200/80 mb-2 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span id="status-text">遊戲準備就緒，由擁有【梅花 3】的玩家起手</span>
+                </div>
+
+                <!-- Last Played Cards Combination Area -->
+                <div id="last-play-area" class="flex justify-center items-center gap-1.5 sm:gap-2 min-h-[100px] py-2">
+                    <!-- Cards will be dynamically inserted here -->
+                </div>
+
+                <!-- Play Info Tag -->
+                <div id="last-play-tag" class="opacity-0 transition-opacity duration-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-goldAccent/40 text-[11px] text-goldAccent font-bold">
+                    -
+                </div>
+            </div>
+
+            <!-- EAST PLAYER (AI 3) -->
+            <div class="col-span-3 sm:col-span-2 flex flex-col items-end gap-1 z-10">
+                <div id="avatar-east" class="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1.5 rounded-full border border-slate-700 transition-all">
+                    <div class="hidden sm:block text-right">
+                        <p class="text-xs font-semibold text-slate-200">青龍</p>
+                        <p id="cards-east" class="text-[10px] text-goldAccent font-bold">13 張</p>
+                    </div>
+                    <div class="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs shadow">東</div>
+                </div>
+                <span id="cards-east-mobile" class="sm:hidden text-[10px] bg-slate-900/80 text-goldAccent px-2 py-0.5 rounded-full border border-slate-700">13張</span>
+                <div id="hand-east" class="flex flex-col -space-y-12 sm:-space-y-10 w-12 sm:w-16 items-center"></div>
+            </div>
+
+        </div>
+
+        <!-- SOUTH PLAYER (HUMAN USER) -->
+        <div class="flex flex-col items-center gap-3 w-full z-20 pt-2">
+            
+            <!-- Action Buttons Bar -->
+            <div class="flex flex-wrap justify-center items-center gap-2 sm:gap-3">
+                <button onclick="sortPlayerHand('rank')" class="px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-600 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i> 點數排序
+                </button>
+                <button onclick="sortPlayerHand('suit')" class="px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-600 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-shapes"></i> 花色排序
+                </button>
+                <button onclick="getAiHint()" class="px-3 py-1.5 rounded-xl bg-indigo-900/80 border border-indigo-500/50 hover:bg-indigo-800 text-indigo-200 text-xs font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i> 提示
+                </button>
+                <button onclick="deselectAllCards()" class="px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-600 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-xmark"></i> 清除選取
+                </button>
+
+                <div class="h-4 w-px bg-slate-600/50 mx-1 hidden sm:block"></div>
+
+                <button id="btn-pass" onclick="handleUserPass()" class="px-5 py-2 rounded-xl bg-rose-900/90 hover:bg-rose-800 border border-rose-500/50 text-rose-100 font-bold text-xs sm:text-sm shadow-md transition active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
+                    過牌 (Pass)
+                </button>
+                <button id="btn-play" onclick="handleUserPlay()" class="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg transition transform active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
+                    <i class="fa-solid fa-paper-plane mr-1"></i> 出牌
+                </button>
+            </div>
+
+            <!-- Human Player Info Badge -->
+            <div id="avatar-south" class="flex items-center gap-2 bg-slate-900/90 px-4 py-1.5 rounded-full border border-goldAccent/40 shadow-lg transition-all">
+                <div class="w-7 h-7 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow">我</div>
+                <span class="text-xs font-bold text-goldAccent">您 (南家)</span>
+                <span id="cards-south" class="bg-amber-500/20 text-goldAccent px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-goldAccent/30">13 張</span>
+            </div>
+
+            <!-- Human Hand Cards Container -->
+            <div id="hand-south" class="flex justify-center -space-x-6 sm:-space-x-8 md:-space-x-10 min-h-[110px] sm:min-h-[130px] pt-4 px-4 w-full max-w-4xl overflow-x-auto pb-2">
+                <!-- Human cards generated here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- WINNER / GAME OVER MODAL -->
+    <div id="gameOverModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-goldAccent rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative overflow-hidden">
+            <div class="w-16 h-16 rounded-full bg-goldAccent/20 border-2 border-goldAccent mx-auto flex items-center justify-center text-goldAccent text-3xl">
+                <i id="winnerIcon" class="fa-solid fa-trophy"></i>
+            </div>
+            <div>
+                <h2 id="winnerText" class="text-2xl font-black text-goldAccent tracking-wide">勝負揭曉</h2>
+                <p id="winnerSubtext" class="text-xs text-slate-300 mt-1">遊戲結束數據統計</p>
+            </div>
+
+            <!-- Players Remaining Cards Table -->
+            <div id="finalScoreTable" class="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 text-left space-y-2 text-xs">
+                <!-- Scores injected dynamically -->
+            </div>
+
+            <button onclick="startNewGame(); hideGameOverModal();" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-goldAccent hover:from-amber-400 hover:to-goldHover text-slate-950 font-black text-base shadow-lg transition transform active:scale-95">
+                再玩一局 (Play Again)
+            </button>
+        </div>
+    </div>
+
+    <!-- RULE GUIDE MODAL -->
+    <div id="ruleModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-goldAccent/40 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-goldAccent flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> 大老二遊戲規則說明
+                </h3>
+                <button onclick="hideRuleModal()" class="text-slate-400 hover:text-white text-lg px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="overflow-y-auto space-y-3 text-xs sm:text-sm text-slate-300 pr-1 leading-relaxed">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p class="font-bold text-goldAccent mb-1">【點數與花色大小】</p>
+                    <p>• 點數：<strong>2 > A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3</strong></p>
+                    <p>• 花色：<strong>黑桃 ♠ > 紅心 ♥ > 方塊 ♦ > 梅花 ♣</strong></p>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p class="font-bold text-goldAccent mb-1">【牌型大小級別】</p>
+                    <p>• <strong>單張 / 對子 / 三條</strong>：需壓過前一家相同張數與較大之牌。</p>
+                    <p>• <strong>五張牌型階級</strong>：同花順 > 鐵支 (4條+1張) > 葫蘆 (3條+對子) > 同花 > 順子。</p>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p class="font-bold text-goldAccent mb-1">【特殊首局出牌】</p>
+                    <p>第一局手牌擁有「梅花 3」的玩家獲得首拍權，且第一手出牌必須包含「梅花 3」。</p>
+                </div>
+            </div>
+            <button onclick="hideRuleModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-goldAccent font-bold text-xs transition">
+                關閉指南
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           GAME CONSTANTS & ENGINE DATA STRUCTURES
+           ========================================================================== */
+        const SUITS = ['♣', '♦', '♥', '♠']; // ♣=0, ♦=1, ♥=2, ♠=3
+        const SUIT-NAMES = {'♣': '梅花', '♦': '方塊', '♥': '紅心', '♠': '黑桃'};
+        const RANKS = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2']; // Index 0..12 corresponds to Big Two values
+
+        // Combination Types Hierarchy (For 5-card hands comparison)
+        const COMBO_TYPES = {
+            INVALID: 0,
+            SINGLE: 1,
+            PAIR: 2,
+            TRIPLE: 3,
+            STRAIGHT: 4,      // 順子
+            FLUSH: 5,         // 同花
+            FULL_HOUSE: 6,    // 葫蘆
+            FOUR_OF_KIND: 7,  // 鐵支
+            STRAIGHT_FLUSH: 8 // 同花順
+        };
+
+        const PLAYERS = ['south', 'east', 'north', 'west']; // 0: South (Human), 1: East (AI), 2: North (AI), 3: West (AI)
+        const PLAYER_NAMES = {
+            south: '您 (南家)',
+            east: '青龍 (東家)',
+            north: '玄武 (北家)',
+            west: '白虎 (西家)'
+        };
+
+        let hands = { south: [], east: [], north: [], west: [] };
+        let selectedCards = []; // Hand index array for human player selection
+        let currentTurn = 0;    // Index in PLAYERS
+        let activeTrick = null; // { comboType, rankValue, suitValue, cards, playerIndex, highestCard }
+        let consecutivePasses = 0;
+        let isFirstTurnOverall = true;
+        let playerWinStats = 0;
+        let isAudioMuted = false;
+
+        /* Web Audio API Synthesizer */
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (isAudioMuted) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'play') {
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'pass') {
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(140, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'win') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
+            } catch (e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audioBtn');
+            btn.innerHTML = isAudioMuted ? `<i class="fa-solid fa-volume-xmark text-rose-400"></i>` : `<i class="fa-solid fa-volume-high"></i>`;
+        }
+
+        // Card Representation: { suitIndex: 0..3, rankIndex: 0..12, id: '♣3', weight: rankIndex * 4 + suitIndex }
+        function createDeck() {
+            let deck = [];
+            for (let r = 0; r < 13; r++) {
+                for (let s = 0; s < 4; s++) {
+                    deck.push({
+                        suitIndex: s,
+                        suit: SUITS[s],
+                        rankIndex: r,
+                        rank: RANKS[r],
+                        weight: r * 4 + s
+                    });
+                }
+            }
+            return deck;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Sort cards ascending by Big Two rules (Weight = rank * 4 + suit)
+        function sortCardsByRank(cardList) {
+            return cardList.sort((a, b) => a.weight - b.weight);
+        }
+
+        function sortCardsBySuit(cardList) {
+            return cardList.sort((a, b) => {
+                if (a.suitIndex !== b.suitIndex) {
+                    return a.suitIndex - b.suitIndex;
+                }
+                return a.rankIndex - b.rankIndex;
+            });
+        }
+
+        function analyzeHandCombo(cards) {
+            if (!cards || cards.length === 0) return { type: COMBO_TYPES.INVALID };
+
+            const len = cards.length;
+            const sorted = [...cards].sort((a, b) => a.weight - b.weight);
+
+            // Single
+            if (len === 1) {
+                return {
+                    type: COMBO_TYPES.SINGLE,
+                    highestCard: sorted[0],
+                    name: `單張 ${sorted[0].rank}`
+                };
+            }
+
+            // Pair
+            if (len === 2) {
+                if (sorted[0].rankIndex === sorted[1].rankIndex) {
+                    return {
+                        type: COMBO_TYPES.PAIR,
+                        highestCard: sorted[1], // higher suit
+                        name: `對子 ${sorted[0].rank}`
+                    };
+                }
+                return { type: COMBO_TYPES.INVALID };
+            }
+
+            // Triple
+            if (len === 3) {
+                if (sorted[0].rankIndex === sorted[1].rankIndex && sorted[1].rankIndex === sorted[2].rankIndex) {
+                    return {
+                        type: COMBO_TYPES.TRIPLE,
+                        highestCard: sorted[2],
+                        name: `三條 ${sorted[0].rank}`
+                    };
+                }
+                return { type: COMBO_TYPES.INVALID };
+            }
+
+            // 5 Cards Combinations
+            if (len === 5) {
+                const ranks = sorted.map(c => c.rankIndex);
+                const suits = sorted.map(c => c.suitIndex);
+
+                const isSameSuit = suits.every(s => s === suits[0]);
+
+                // Count frequencies
+                const counts = {};
+                ranks.forEach(r => counts[r] = (counts[r] || 0) + 1);
+                const freqKeys = Object.keys(counts);
+
+                // Check Straight (順子)
+                let isStraight = false;
+                let straightHighestCard = sorted[4];
+
+                // Standard consecutive ranks (e.g. 3-4-5-6-7 up to 10-J-Q-K-A)
+                if (freqKeys.length === 5) {
+                    const sortedRanks = [...ranks].sort((a,b) => a - b);
+                    if (sortedRanks[4] - sortedRanks[0] === 4) {
+                        isStraight = true;
+                        straightHighestCard = sorted.find(c => c.rankIndex === sortedRanks[4]);
+                    } 
+                    // Special Taiwan Straight cases: A-2-3-4-5 or 2-3-4-5-6 wrap around check
+                    // For simplified standard consistency: 
+                    // If ranks are [0,1,2,3,12] (3,4,5,6,2), highest card is '2'
+                    else if (sortedRanks[0] === 0 && sortedRanks[1] === 1 && sortedRanks[2] === 2 && sortedRanks[3] === 3 && sortedRanks[4] === 12) {
+                        isStraight = true;
+                        straightHighestCard = sorted.find(c => c.rankIndex === 12);
+                    }
+                    // A-2-3-4-5: [0,1,2,11,12] (3,4,5,A,2)
+                    else if (sortedRanks[0] === 0 && sortedRanks[1] === 1 && sortedRanks[2] === 2 && sortedRanks[3] === 11 && sortedRanks[4] === 12) {
+                        isStraight = true;
+                        straightHighestCard = sorted.find(c => c.rankIndex === 12);
+                    }
+                }
+
+                // 1. Straight Flush (同花順)
+                if (isSameSuit && isStraight) {
+                    return {
+                        type: COMBO_TYPES.STRAIGHT_FLUSH,
+                        highestCard: straightHighestCard,
+                        name: `同花順 (${straightHighestCard.rank} 高)`
+                    };
+                }
+
+                // 2. Four of a Kind (鐵支)
+                if (freqKeys.length === 2) {
+                    const fourRank = freqKeys.find(k => counts[k] === 4);
+                    if (fourRank !== undefined) {
+                        const fourCards = sorted.filter(c => c.rankIndex === parseInt(fourRank));
+                        const maxFourCard = fourCards.sort((a,b) => b.suitIndex - a.suitIndex)[0];
+                        return {
+                            type: COMBO_TYPES.FOUR_OF_KIND,
+                            highestCard: maxFourCard,
+                            name: `鐵支 ${RANKS[fourRank]}`
+                        };
+                    }
+                }
+
+                // 3. Full House (葫蘆)
+                if (freqKeys.length === 2) {
+                    const threeRank = freqKeys.find(k => counts[k] === 3);
+                    if (threeRank !== undefined) {
+                        const threeCards = sorted.filter(c => c.rankIndex === parseInt(threeRank));
+                        const maxThreeCard = threeCards.sort((a,b) => b.suitIndex - a.suitIndex)[0];
+                        return {
+                            type: COMBO_TYPES.FULL_HOUSE,
+                            highestCard: maxThreeCard,
+                            name: `葫蘆 (${RANKS[threeRank]} 三條)`
+                        };
+                    }
+                }
+
+                // 4. Flush (同花)
+                if (isSameSuit) {
+                    return {
+                        type: COMBO_TYPES.FLUSH,
+                        highestCard: sorted[4],
+                        name: `同花 (${SUIT-NAMES[sorted[0].suit]})`
+                    };
+                }
+
+                // 5. Straight (順子)
+                if (isStraight) {
+                    return {
+                        type: COMBO_TYPES.STRAIGHT,
+                        highestCard: straightHighestCard,
+                        name: `順子 (${straightHighestCard.rank} 高)`
+                    };
+                }
+            }
+
+            return { type: COMBO_TYPES.INVALID };
+        }
+
+        /* Compare two played combos. Returns true if candidate can beat activeTrick */
+        function canBeatTrick(candidateCombo, activeTrick) {
+            if (!candidateCombo || candidateCombo.type === COMBO_TYPES.INVALID) return false;
+            if (!activeTrick) return true; // Leading a new trick
+
+            // If active trick is Single, Pair, or Triple: Candidate MUST match type and beat highestCard
+            if (activeTrick.comboType <= COMBO_TYPES.TRIPLE) {
+                if (candidateCombo.type !== activeTrick.comboType) return false;
+                return candidateCombo.highestCard.weight > activeTrick.highestCard.weight;
+            }
+
+            // If active trick is a 5-card combination:
+            if (activeTrick.comboType >= COMBO_TYPES.STRAIGHT) {
+                if (candidateCombo.type < COMBO_TYPES.STRAIGHT) return false; // Must be 5 cards
+
+                // Higher combo tier automatically beats lower tier (e.g. Full House > Straight)
+                if (candidateCombo.type > activeTrick.comboType) return true;
+                if (candidateCombo.type < activeTrick.comboType) return false;
+
+                // Same combo tier: compare highest key card weight
+                return candidateCombo.highestCard.weight > activeTrick.highestCard.weight;
+            }
+
+            return false;
+        }
+
+        function startNewGame() {
+            playSound('click');
+            const deck = shuffle(createDeck());
+
+            hands.south = sortCardsByRank(deck.slice(0, 13));
+            hands.east = sortCardsByRank(deck.slice(13, 26));
+            hands.north = sortCardsByRank(deck.slice(26, 39));
+            hands.west = sortCardsByRank(deck.slice(39, 52));
+
+            selectedCards = [];
+            activeTrick = null;
+            consecutivePasses = 0;
+            isFirstTurnOverall = true;
+
+            // Find player with ♣3 (weight = 0)
+            let startingPlayer = 0;
+            PLAYERS.forEach((p, idx) => {
+                if (hands[p].some(c => c.weight === 0)) {
+                    startingPlayer = idx;
+                }
+            });
+
+            currentTurn = startingPlayer;
+
+            // Clear played table display
+            document.getElementById('last-play-area').innerHTML = `<span class="text-xs text-amber-200/60 italic">等待首位出牌...</span>`;
+            document.getElementById('last-play-tag').classList.add('opacity-0');
+
+            updateUI();
+            
+            showToast(`牌局開始！${PLAYER_NAMES[PLAYERS[currentTurn]]} 持有【梅花 3】開局`, 'gold');
+
+            if (PLAYERS[currentTurn] !== 'south') {
+                setTimeout(processAiTurn, 1000);
+            }
+        }
+
+        function updateUI() {
+            // Render Human Hand (South)
+            const southContainer = document.getElementById('hand-south');
+            southContainer.innerHTML = '';
+
+            hands.south.forEach((card, index) => {
+                const isSelected = selectedCards.includes(index);
+                const cardEl = document.createElement('div');
+                
+                const isRed = card.suit === '♥' || card.suit === '♦';
+                
+                cardEl.className = `poker-card w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-28 border border-slate-300 p-1.5 flex flex-col justify-between ${isSelected ? 'selected' : ''}`;
+                cardEl.onclick = () => toggleCardSelection(index);
+
+                cardEl.innerHTML = `
+                    <div class="text-left font-bold ${isRed ? 'text-pokerRed' : 'text-pokerBlack'} leading-none">
+                        <div class="text-xs sm:text-base">${card.rank}</div>
+                        <div class="text-xs sm:text-sm">${card.suit}</div>
+                    </div>
+                    <div class="text-center text-lg sm:text-2xl ${isRed ? 'text-pokerRed' : 'text-pokerBlack'} my-auto opacity-80">
+                        ${card.suit}
+                    </div>
+                    <div class="text-right font-bold ${isRed ? 'text-pokerRed' : 'text-pokerBlack'} leading-none rotate-180">
+                        <div class="text-xs sm:text-base">${card.rank}</div>
+                        <div class="text-xs sm:text-sm">${card.suit}</div>
+                    </div>
+                `;
+                southContainer.appendChild(cardEl);
+            });
+
+            // Update Cards Count Badges
+            PLAYERS.forEach(p => {
+                const count = hands[p].length;
+                const countBadge = document.getElementById(`cards-${p}`);
+                if (countBadge) countBadge.innerText = `${count} 張`;
+
+                const mobileBadge = document.getElementById(`cards-${p}-mobile`);
+                if (mobileBadge) mobileBadge.innerText = `${count}張`;
+
+                // Render Card Backs for AI Players
+                if (p !== 'south') {
+                    const aiContainer = document.getElementById(`hand-${p}`);
+                    if (aiContainer) {
+                        aiContainer.innerHTML = '';
+                        const maxBacksToShow = Math.min(count, p === 'north' ? 13 : 8);
+                        for (let i = 0; i < maxBacksToShow; i++) {
+                            const backEl = document.createElement('div');
+                            if (p === 'north') {
+                                backEl.className = 'w-7 h-10 sm:w-9 sm:h-14 card-back rounded-md shadow';
+                            } else {
+                                backEl.className = 'w-10 h-7 sm:w-14 sm:h-9 card-back rounded-md shadow';
+                            }
+                            aiContainer.appendChild(backEl);
+                        }
+                    }
+                }
+
+                // Highlight active turn avatar
+                const avatar = document.getElementById(`avatar-${p}`);
+                if (avatar) {
+                    if (PLAYERS.indexOf(p) === currentTurn) {
+                        avatar.classList.add('active-turn', 'bg-amber-950/90');
+                        avatar.classList.remove('bg-slate-900/80');
+                    } else {
+                        avatar.classList.remove('active-turn', 'bg-amber-950/90');
+                        avatar.classList.add('bg-slate-900/80');
+                    }
+                }
+            });
+
+            // Button state for Human
+            const isHumanTurn = PLAYERS[currentTurn] === 'south';
+            const btnPlay = document.getElementById('btn-play');
+            const btnPass = document.getElementById('btn-pass');
+
+            btnPlay.disabled = !isHumanTurn || selectedCards.length === 0;
+            // Can pass only if there is an active trick and it wasn't played by Human
+            btnPass.disabled = !isHumanTurn || !activeTrick || activeTrick.playerIndex === 0;
+
+            // Status message
+            const statusText = document.getElementById('status-text');
+            if (isHumanTurn) {
+                statusText.innerText = activeTrick ? `輪到您的回合！請選擇牌型壓過對手` : `輪到您自由起牌！`;
+            } else {
+                statusText.innerText = `等待 ${PLAYER_NAMES[PLAYERS[currentTurn]]} 出牌中...`;
+            }
+        }
+
+        function toggleCardSelection(index) {
+            playSound('click');
+            const selIdx = selectedCards.indexOf(index);
+            if (selIdx > -1) {
+                selectedCards.splice(selIdx, 1);
+            } else {
+                selectedCards.push(index);
+            }
+            updateUI();
+        }
+
+        function deselectAllCards() {
+            playSound('click');
+            selectedCards = [];
+            updateUI();
+        }
+
+        function sortPlayerHand(type) {
+            playSound('click');
+            if (type === 'rank') {
+                hands.south = sortCardsByRank(hands.south);
+            } else {
+                hands.south = sortCardsBySuit(hands.south);
+            }
+            selectedCards = [];
+            updateUI();
+        }
+
+        function handleUserPlay() {
+            if (PLAYERS[currentTurn] !== 'south') return;
+
+            const playedCards = selectedCards.map(idx => hands.south[idx]);
+            const candidateCombo = analyzeHandCombo(playedCards);
+
+            if (candidateCombo.type === COMBO_TYPES.INVALID) {
+                showToast('無效的牌型組合！', 'red');
+                return;
+            }
+
+            // Must contain ♣3 on very first move of the match
+            if (isFirstTurnOverall) {
+                const hasClub3 = playedCards.some(c => c.weight === 0);
+                if (!hasClub3) {
+                    showToast('首局第一手必須包含【梅花 3】！', 'red');
+                    return;
+                }
+            }
+
+            // Check if beats current active trick
+            if (activeTrick && activeTrick.playerIndex !== 0) {
+                if (!canBeatTrick(candidateCombo, activeTrick)) {
+                    showToast('您的牌型無法壓過桌面上的牌！', 'red');
+                    return;
+                }
+            }
+
+            // Valid play executed! Remove cards from hand
+            executePlay(0, playedCards, candidateCombo);
+        }
+
+        function handleUserPass() {
+            if (PLAYERS[currentTurn] !== 'south') return;
+            if (!activeTrick || activeTrick.playerIndex === 0) {
+                showToast('自由起牌階段不可過牌！', 'red');
+                return;
+            }
+
+            executePass(0);
+        }
+
+        function executePlay(playerIdx, cardsPlayed, combo) {
+            playSound('play');
+            const playerKey = PLAYERS[playerIdx];
+
+            // Remove played cards from player's hand
+            hands[playerKey] = hands[playerKey].filter(c => !cardsPlayed.some(pc => pc.weight === c.weight));
+
+            // Update active trick
+            activeTrick = {
+                comboType: combo.type,
+                highestCard: combo.highestCard,
+                cards: cardsPlayed,
+                playerIndex: playerIdx,
+                name: combo.name
+            };
+
+            consecutivePasses = 0;
+            isFirstTurnOverall = false;
+            selectedCards = [];
+
+            // Display on table
+            renderTableTrick(playerKey, cardsPlayed, combo.name);
+
+            // Check Win Condition
+            if (hands[playerKey].length === 0) {
+                handleGameOver(playerKey);
+                return;
+            }
+
+            // Advance to next turn
+            currentTurn = (currentTurn + 1) % 4;
+            updateUI();
+
+            if (PLAYERS[currentTurn] !== 'south') {
+                setTimeout(processAiTurn, 900);
+            }
+        }
+
+        function executePass(playerIdx) {
+            playSound('pass');
+            const playerKey = PLAYERS[playerIdx];
+            showToast(`${PLAYER_NAMES[playerKey]} 選擇過牌 (Pass)`, 'gray');
+
+            consecutivePasses++;
+
+            // If 3 players consecutively passed, clear table and reset trick owner
+            if (consecutivePasses >= 3) {
+                setTimeout(() => {
+                    activeTrick = null;
+                    consecutivePasses = 0;
+                    const winnerOfTrick = PLAYERS[currentTurn]; // Player who last played gets free lead
+                    document.getElementById('last-play-area').innerHTML = `<span class="text-xs text-goldAccent italic">【${PLAYER_NAMES[winnerOfTrick]}】 獲得全新自由出牌權</span>`;
+                    document.getElementById('last-play-tag').classList.add('opacity-0');
+                    updateUI();
+
+                    if (winnerOfTrick !== 'south') {
+                        setTimeout(processAiTurn, 800);
+                    }
+                }, 800);
+            }
+
+            currentTurn = (currentTurn + 1) % 4;
+            updateUI();
+
+            if (consecutivePasses < 3 && PLAYERS[currentTurn] !== 'south') {
+                setTimeout(processAiTurn, 900);
+            }
+        }
+
+        function renderTableTrick(playerKey, cards, comboName) {
+            const area = document.getElementById('last-play-area');
+            area.innerHTML = '';
+
+            cards.forEach(card => {
+                const isRed = card.suit === '♥' || card.suit === '♦';
+                const el = document.createElement('div');
+                el.className = `poker-card w-12 h-16 sm:w-16 sm:h-22 border border-slate-300 p-1 flex flex-col justify-between bg-white text-slate-900 shadow-md animate-bounce-short`;
+                el.innerHTML = `
+                    <div class="text-left font-bold ${isRed ? 'text-pokerRed' : 'text-pokerBlack'} text-xs leading-none">
+                        ${card.rank}<br>${card.suit}
+                    </div>
+                    <div class="text-center text-lg ${isRed ? 'text-pokerRed' : 'text-pokerBlack'}">
+                        ${card.suit}
+                    </div>
+                `;
+                area.appendChild(el);
+            });
+
+            const tag = document.getElementById('last-play-tag');
+            tag.innerText = `${PLAYER_NAMES[playerKey]} ： ${comboName}`;
+            tag.classList.remove('opacity-0');
+        }
+
+        function processAiTurn() {
+            const playerIdx = currentTurn;
+            const playerKey = PLAYERS[playerIdx];
+            const aiHand = hands[playerKey];
+
+            // If active trick belongs to this AI (all other 3 passed), reset trick
+            if (activeTrick && activeTrick.playerIndex === playerIdx) {
+                activeTrick = null;
+                consecutivePasses = 0;
+            }
+
+            // Find valid candidates
+            const bestPlay = findBestAiPlay(aiHand, activeTrick, isFirstTurnOverall);
+
+            if (bestPlay) {
+                const combo = analyzeHandCombo(bestPlay);
+                executePlay(playerIdx, bestPlay, combo);
+            } else {
+                executePass(playerIdx);
+            }
+        }
+
+        function findBestAiPlay(hand, trick, mustIncludeClub3) {
+            // Helper to generate all potential valid 1, 2, 3, 5 card combinations from hand
+            const sortedHand = [...hand].sort((a, b) => a.weight - b.weight);
+
+            // Filter for Club 3 requirement if needed
+            const filterClub3 = (cards) => {
+                if (!mustIncludeClub3) return true;
+                return cards.some(c => c.weight === 0);
+            };
+
+            // 1. If leading a trick (no active trick)
+            if (!trick) {
+                if (mustIncludeClub3) {
+                    // Try to play smallest pair with ♣3, else single ♣3
+                    const pairWith3 = findPairs(sortedHand).find(p => filterClub3(p));
+                    if (pairWith3) return pairWith3;
+                    return [sortedHand.find(c => c.weight === 0)];
+                }
+
+                // AI default lead strategy: play smallest single or pair
+                const pairs = findPairs(sortedHand);
+                if (pairs.length > 0 && Math.random() > 0.4) {
+                    return pairs[0]; // Smallest pair
+                }
+                return [sortedHand[0]]; // Smallest single
+            }
+
+            // 2. Beating an active trick
+            if (trick.comboType === COMBO_TYPES.SINGLE) {
+                const candidate = sortedHand.find(c => c.weight > trick.highestCard.weight);
+                return candidate ? [candidate] : null;
+            }
+
+            if (trick.comboType === COMBO_TYPES.PAIR) {
+                const pairs = findPairs(sortedHand);
+                const beatingPair = pairs.find(p => {
+                    const combo = analyzeHandCombo(p);
+                    return canBeatTrick(combo, trick);
+                });
+                return beatingPair || null;
+            }
+
+            if (trick.comboType === COMBO_TYPES.TRIPLE) {
+                const triples = findTriples(sortedHand);
+                const beatingTriple = triples.find(t => {
+                    const combo = analyzeHandCombo(t);
+                    return canBeatTrick(combo, trick);
+                });
+                return beatingTriple || null;
+            }
+
+            // 5 Card Tricks
+            if (trick.comboType >= COMBO_TYPES.STRAIGHT) {
+                const fiveCardCombos = findAllFiveCardCombos(sortedHand);
+                const beatingFive = fiveCardCombos.find(fc => {
+                    const combo = analyzeHandCombo(fc);
+                    return canBeatTrick(combo, trick);
+                });
+                return beatingFive || null;
+            }
+
+            return null;
+        }
+
+        function findPairs(hand) {
+            const pairs = [];
+            for (let i = 0; i < hand.length - 1; i++) {
+                if (hand[i].rankIndex === hand[i+1].rankIndex) {
+                    pairs.push([hand[i], hand[i+1]]);
+                }
+            }
+            return pairs;
+        }
+
+        function findTriples(hand) {
+            const triples = [];
+            for (let i = 0; i < hand.length - 2; i++) {
+                if (hand[i].rankIndex === hand[i+1].rankIndex && hand[i+1].rankIndex === hand[i+2].rankIndex) {
+                    triples.push([hand[i], hand[i+1], hand[i+2]]);
+                }
+            }
+            return triples;
+        }
+
+        function findAllFiveCardCombos(hand) {
+            // Simplified generator for AI 5-card hands (Full House & Straights)
+            const combos = [];
+            const len = hand.length;
+            if (len < 5) return combos;
+
+            // Generate Full Houses
+            const triples = findTriples(hand);
+            const pairs = findPairs(hand);
+            triples.forEach(t => {
+                pairs.forEach(p => {
+                    if (p[0].rankIndex !== t[0].rankIndex) {
+                        combos.push([...t, ...p]);
+                    }
+                });
+            });
+
+            return combos;
+        }
+
+        /* User Hint Feature */
+        function getAiHint() {
+            if (PLAYERS[currentTurn] !== 'south') {
+                showToast('目前不是您的回合！', 'red');
+                return;
+            }
+
+            const hintCards = findBestAiPlay(hands.south, activeTrick, isFirstTurnOverall);
+            if (hintCards) {
+                // Select hint cards in UI
+                selectedCards = hintCards.map(c => hands.south.findIndex(hc => hc.weight === c.weight));
+                updateUI();
+                const combo = analyzeHandCombo(hintCards);
+                showToast(`提示牌型：${combo.name}`, 'gold');
+            } else {
+                showToast('目前沒有可壓過的牌型，建議過牌 (Pass)', 'gray');
+            }
+        }
+
+        function handleGameOver(winnerKey) {
+            playSound('win');
+            
+            if (winnerKey === 'south') {
+                playerWinStats++;
+                document.getElementById('winCount').innerText = `${playerWinStats} 勝`;
+            }
+
+            const modal = document.getElementById('gameOverModal');
+            const winnerText = document.getElementById('winnerText');
+            const winnerIcon = document.getElementById('winnerIcon');
+            const scoreTable = document.getElementById('finalScoreTable');
+
+            if (winnerKey === 'south') {
+                winnerText.innerText = '🎉 恭喜獲勝！拿下大老二冠軍！';
+                winnerIcon.className = 'fa-solid fa-trophy text-amber-400';
+            } else {
+                winnerText.innerText = `😔 遺憾！由 ${PLAYER_NAMES[winnerKey]} 獲得勝利`;
+                winnerIcon.className = 'fa-solid fa-skull-crossbones text-rose-400';
+            }
+
+            let tableHTML = `<p class="font-bold text-goldAccent mb-2 border-b border-slate-800 pb-1">各玩家剩餘張數：</p>`;
+            PLAYERS.forEach(p => {
+                const count = hands[p].length;
+                tableHTML += `
+                    <div class="flex justify-between items-center py-1">
+                        <span class="${p === winnerKey ? 'text-amber-400 font-bold' : 'text-slate-300'}">${PLAYER_NAMES[p]}</span>
+                        <span class="font-mono ${count === 0 ? 'text-emerald-400 font-bold' : 'text-rose-400'}">${count === 0 ? '勝 (0張)' : `${count} 張`}</span>
+                    </div>
+                `;
+            });
+
+            scoreTable.innerHTML = tableHTML;
+            modal.classList.remove('hidden');
+        }
+
+        function hideGameOverModal() {
+            document.getElementById('gameOverModal').classList.add('hidden');
+        }
+
+        function showRuleModal() {
+            playSound('click');
+            document.getElementById('ruleModal').classList.remove('hidden');
+        }
+
+        function hideRuleModal() {
+            document.getElementById('ruleModal').classList.add('hidden');
+        }
+
+        /* Toast notification popup */
+        function showToast(msg, theme = 'gold') {
+            const toast = document.createElement('div');
+            let bgClass = 'bg-amber-950/90 border-goldAccent text-amber-200';
+            if (theme === 'red') bgClass = 'bg-rose-950/90 border-rose-500 text-rose-200';
+            if (theme === 'gray') bgClass = 'bg-slate-900/90 border-slate-600 text-slate-300';
+
+            toast.className = `fixed bottom-24 left-1/2 transform -translate-x-1/2 ${bgClass} border px-4 py-2 rounded-full text-xs font-bold shadow-2xl z-50 transition-all duration-300 opacity-0 scale-90 pointer-events-none`;
+            toast.innerText = msg;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'scale-90');
+                toast.classList.add('opacity-100', 'scale-100');
+            }, 20);
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'scale-100');
+                toast.classList.add('opacity-0', 'scale-90');
+                setTimeout(() => toast.remove(), 300);
+            }, 2200);
+        }
+
+        window.onload = function() {
+            startNewGame();
+        };
+    </script>
+</body>
+</html>
