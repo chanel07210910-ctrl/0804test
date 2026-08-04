@@ -1,0 +1,6 @@
+{
+  "name": "三卡運勢算命工具",
+  "description": "專業三卡運勢測算工具，針對健康、財運、婚姻三面向進行精準解析、抽牌神諭與AI大師靈性指引。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
